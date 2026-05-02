@@ -211,3 +211,41 @@ WHERE id = $1 AND student_id = $2;
 DELETE FROM notifications
 WHERE id = $1 AND student_id = $2;
 ```
+
+## Stage 3
+
+The query:
+
+```sql
+SELECT * FROM notifications
+WHERE studentID = 1042 AND isRead = false
+ORDER BY createdAt DESC;
+```
+
+### Is it correct?
+
+Yes the query is correct it will work but it is slow because there's no index so it is going through all 5 million rows every time to find one student's unread notifications.
+
+### What I'd fix
+
+First add indexing and also drop SELECT * and only fetch what is needed.
+
+```sql
+CREATE INDEX idx_notifications_student_unread
+ON notifications(studentID, isRead, createdAt DESC);
+```
+
+This will make a big difference as instead of scanning the whole table it goes directly to the relevant rows.
+
+### Should we index every column?
+
+No we should not index every column. Indexes make reads faster but every write has to update them too. More indexes = slower insert. indexing what we have to querying is better.
+
+### Students who got a placement notification in the last 7 days
+
+```sql
+SELECT DISTINCT studentID
+FROM notifications
+WHERE notificationType = 'Placement'
+AND createdAt >= NOW() - INTERVAL '7 days';
+```
