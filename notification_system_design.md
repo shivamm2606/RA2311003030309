@@ -82,7 +82,7 @@ Response:
 
 #### POST /api/v1/notifications
 
-Admin only — broadcast a notification to one or more students.
+Admin only - broadcast a notification to one or more students.
 
 Request:
 
@@ -180,7 +180,7 @@ When the system grows, a few issues can come up:
 
 ### Queries
 
-**GET /api/v1/notifications** — fetch unread notifications for a student:
+**GET /api/v1/notifications** - fetch unread notifications for a student:
 
 ```sql
 SELECT id, type, message, created_at
@@ -189,7 +189,7 @@ WHERE student_id = $1 AND is_read = false
 ORDER BY created_at DESC;
 ```
 
-**PATCH /api/v1/notifications/read-all** — mark all as read:
+**PATCH /api/v1/notifications/read-all** - mark all as read:
 
 ```sql
 UPDATE notifications
@@ -197,7 +197,7 @@ SET is_read = true
 WHERE student_id = $1 AND is_read = false;
 ```
 
-**PATCH /api/v1/notifications/:id/read** — mark one as read:
+**PATCH /api/v1/notifications/:id/read** - mark one as read:
 
 ```sql
 UPDATE notifications
@@ -328,3 +328,19 @@ Saving to DB should happen first so notification is available in the app.
 
 Email can happen later in background.
 Even if it fails, it can retry, so nothing is lost.
+
+## Stage 6
+
+For the priority inbox, what I'm doing is simple.
+
+I fetch all notifications from the API and sort them based on priority. I gave each type a weight:
+
+- Placement → 3
+- Result → 2
+- Event → 1
+
+Higher weight means it shows up first. If two notifications have the same type, I just compare timestamps and show the newer one first. After sorting I take the top 10.
+
+For keeping it updated - since we already have WebSockets from Stage 1, whenever a new notification comes in I just re-fetch and sort again. No DB calls needed, list stays fresh.
+
+The code for this is in `notification_app_be/index.js`.
