@@ -271,3 +271,60 @@ Managing a lot of open socket connections can get difficult at scale.
 ### What I'd do
 
 Just combine all three, Redis for caching faster loading, pagination so we're not fetching everything at once, and sockets for real-time updates.
+
+## Stage 5
+
+The current code:
+
+```
+function notify_all(student_ids: array, message: string):
+    for student_id in student_ids:
+        send_email(student_id, message)
+        save_to_db(student_id, message)
+        push_to_app(student_id, message)
+```
+
+### What's wrong here
+
+Main issue is it’s doing everything one by one.
+
+If there are like 50,000 students, this will take a lot of time.
+Also if email fails at, say, student 200, then the loop breaks and rest of the students won’t get anything.
+
+Also saving to DB inside the loop again and again is slow.
+
+### What I'd do
+
+First I’d save everything to DB in one go.
+
+So at least notifications are stored and students can see them in the app.
+
+Then for emails, I won’t send them directly. I’d use a queue.
+
+```
+function notify_all(student_ids: array, message: string):
+    bulk_save_to_db(student_ids, message)
+
+    for student_id in student_ids:
+        push_to_app(student_id, message)
+        enqueue_email(student_id, message)
+```
+
+Then a separate worker will handle emails:
+
+```
+function email_worker(student_id, message):
+    try:
+        send_email(student_id, message)
+    except:
+        retry(student_id, message)
+```
+
+### Should saving to DB and sending email happen together?
+
+I don’t think so.
+
+Saving to DB should happen first so notification is available in the app.
+
+Email can happen later in background.
+Even if it fails, it can retry, so nothing is lost.
