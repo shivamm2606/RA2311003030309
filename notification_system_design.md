@@ -228,7 +228,7 @@ Yes the query is correct it will work but it is slow because there's no index so
 
 ### What I'd fix
 
-First add indexing and also drop SELECT * and only fetch what is needed.
+First add indexing and also drop SELECT \* and only fetch what is needed.
 
 ```sql
 CREATE INDEX idx_notifications_student_unread
@@ -249,3 +249,25 @@ FROM notifications
 WHERE notificationType = 'Placement'
 AND createdAt >= NOW() - INTERVAL '7 days';
 ```
+
+## Stage 4
+
+The main problem is that hitting the DB every time a student opens the page will get slow as users increase. So the goal is just to reduce DB calls.
+
+### Redis
+
+Store each student's notifications in Redis for a bit. When the page loads, check Redis first if data's there, return it, otherwise go to the DB and cache the result. When a new notification comes in, update Redis too.
+
+### Pagination
+
+Instead of loading everything at once, just load 20 at a time. Load more when the user scrolls down. Reduces DB load.
+
+### WebSockets
+
+As we're already using sockets, new notifications can be pushed directly to the student without calling the API again.
+
+Managing a lot of open socket connections can get difficult at scale.
+
+### What I'd do
+
+Just combine all three, Redis for caching faster loading, pagination so we're not fetching everything at once, and sockets for real-time updates.
