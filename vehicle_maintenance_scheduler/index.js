@@ -70,7 +70,7 @@ const main = async () => {
       "backend",
       "info",
       "service",
-      `Depot ${depot.ID} — ${picked.length} tasks, impact: ${totalImpact}`,
+      `Depot ${depot.ID} - ${picked.length} tasks, impact: ${totalImpact}`,
     );
   }
 
@@ -82,7 +82,7 @@ main().catch(async (err) => {
     "backend",
     "fatal",
     "service",
-    `Scheduler crashed — ${err.message}`,
+    `Scheduler crashed - ${err.message}`,
   );
   console.error(err);
 });
